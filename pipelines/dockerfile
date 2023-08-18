@@ -1,0 +1,33 @@
+FROM jenkins/jenkins:latest
+
+# com usuario root, iremos instalar alguns pacotes necessarios e fazer algumas
+# manipulacoes para se evitar problemas em rodar o docker dentro de um container docker
+USER root
+
+# Instale pacotes adicionais
+RUN apt-get update && \
+    apt-get install -y wget
+
+# Instalando engine docker dentro container
+RUN wget https://download.docker.com/linux/static/stable/x86_64/docker-20.10.9.tgz && \
+tar -xf docker-20.10.9.tgz && \
+mv ./docker/docker /usr/local/bin
+
+RUN groupadd docker && usermod -aG docker jenkins
+
+# Instalando kubectl
+RUN curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl 
+
+# instalando helm
+RUN curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 && \
+chmod 700 get_helm.sh && \
+./get_helm.sh
+
+USER jenkins
+
+# Instalando plugins necessarios para nosso case:
+RUN jenkins-plugin-cli --plugins "kubernetes-cli" &&\
+jenkins-plugin-cli --plugins "aws-credentials" && \
+jenkins-plugin-cli --plugins "amazon-ecr" && \
+jenkins-plugin-cli --plugins "docker-workflow"

@@ -1,0 +1,4 @@
+region: "us-east-1"
+account_id: "301227637373" # TROQUE ESTE VALOR PELO SEU!
+k8_cluster_id: "CA7E8E4ACBBF09681BA157F46BEE0550" # TROQUE ESTE VALOR PELO SEU!
+service_account_name: "aws-load-balancer-controller"

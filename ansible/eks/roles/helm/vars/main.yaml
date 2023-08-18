@@ -1,0 +1,7 @@
+release_namespace: kube-system
+name: aws-load-balancer-controller
+eks_cluster_name: desafio-devops-cluster
+kubeconfig: "~/.kube/config"
+service_name: service-desafio-devops
+ingress_name: desafio-devops
+app_name: desafio-devops

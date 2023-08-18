@@ -1,0 +1,8 @@
+devops_service_account_name: devops-svc
+devops_service_account_namespace: default
+balancer_service_account_name: aws-load-balancer-controller
+balancer_service_account_namespace: kube-system
+role_binding_name: updated-rolebinding
+role_binding_role: edit
+role_binding_api_group: rbac.authorization.k8s.io
+account_id: "301227637373" # TROQUE ESTE VALOR PELO SEU!

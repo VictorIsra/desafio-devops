@@ -1,0 +1,61 @@
+- name: Criar ClusterRole
+  kubernetes.core.k8s:
+    kind: ClusterRole
+    api_version: rbac.authorization.k8s.io/v1
+    definition:
+      metadata:
+        name: create-deployments
+      rules:
+        - apiGroups: ["*"]
+          resources: ["deployments","pods/*","services","secrets","networkpolicies.networking.k8s.io","pods"]
+          verbs: ["get","list","watch","create","update","patch","apply"]
+
+- name: Criar ServiceAccount Devops
+  kubernetes.core.k8s:
+    kind: ServiceAccount
+    api_version: v1
+    definition:
+      metadata:
+        name: "{{ devops_service_account_name }}"
+        namespace: "{{ devops_service_account_namespace }}"
+
+- name: Criar ClusterRoleBinding para ServiceAccount Devops
+  kubernetes.core.k8s:
+    kind: ClusterRoleBinding
+    api_version: rbac.authorization.k8s.io/v1
+    name: "{{ role_binding_name }}"
+    namespace: "{{ devops_service_account_namespace }}"
+    definition:
+      subjects:
+        - kind: ServiceAccount
+          name: "{{ devops_service_account_name }}"
+          namespace: "{{ devops_service_account_namespace }}"
+      roleRef:
+        kind: ClusterRole
+        name: "{{ role_binding_role }}"
+        apiGroup: "{{ role_binding_api_group }}"
+  register: role_binding_result
+
+- name: Criar Secret no Kubernetes para Devops
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Secret
+      metadata:
+        name: sa1-token
+        namespace: "{{ devops_service_account_namespace }}"
+        annotations:
+          kubernetes.io/service-account.name: "{{ devops_service_account_name }}"
+      type: kubernetes.io/service-account-token
+
+- name: Obter token do Secret no Kubernetes Devops
+  kubernetes.core.k8s_info:
+    kind: Secret
+    name: sa1-token
+    namespace: "{{ devops_service_account_namespace }}"
+  register: secret_info
+
+- name: Decodificar e exibir o token Devops
+  ansible.builtin.debug:
+    var: secret_info.resources[0].data.token | b64decode | string

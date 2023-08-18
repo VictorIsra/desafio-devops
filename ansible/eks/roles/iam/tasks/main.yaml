@@ -1,0 +1,39 @@
+- name: Create IAM Managed Policy
+  community.aws.iam_managed_policy:
+    policy_name: "AWSLoadBalancerControllerIAMPolicy"
+    policy_description: "A helpful managed policy"
+    policy: "{{ lookup('file', '../policies/lb_ingress_policy.json') }}"
+    state: present
+  register: policy_result
+
+- name: Create Role
+  community.aws.iam_role:
+    name: "AmazonEKSLoadBalancerControllerRole"
+    assume_role_policy_document: |
+      {
+        "Version": "2012-10-17",
+        "Statement": [
+          {
+            "Effect": "Allow",
+            "Principal": {
+              "Federated": "arn:aws:iam::{{ account_id }}:oidc-provider/oidc.eks.us-east-1.amazonaws.com/id/{{ k8_cluster_id }}"
+            },
+            "Action": "sts:AssumeRoleWithWebIdentity",
+            "Condition": {
+              "StringEquals": {
+                "oidc.eks.{{ region }}.amazonaws.com/id/{{ k8_cluster_id }}:aud": "sts.amazonaws.com",
+                "oidc.eks.{{ region }}.amazonaws.com/id/{{ k8_cluster_id }}:sub": "system:serviceaccount:kube-system:{{ service_account_name }}"
+              }
+            }
+          }
+        ]
+      }
+    state: present
+  register: policy_result2
+
+- name: Display Policy Result
+  debug:
+    var: policy_result2
+
+- name: Attach policy to IAM role
+  command: "aws iam attach-role-policy --role-name AmazonEKSLoadBalancerControllerRole --policy-arn {{ policy_result.policy.arn }}"

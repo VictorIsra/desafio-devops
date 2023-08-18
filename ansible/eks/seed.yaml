@@ -1,0 +1,13 @@
+---
+- name: Meu Playbook Kubernetes
+  hosts: localhost
+  gather_facts: no
+  environment:
+    KUBECONFIG: "~/.kube/config"
+    K8S_AUTH_CONTEXT: "arn:aws:eks:us-east-1:301227637373:cluster/desafio-devops-cluster" # TROQUE ESTE VALOR PELO SEU!
+    AWS_PROFILE: "default"
+  roles:
+    - iam
+    - service_accounts
+    - helm
+

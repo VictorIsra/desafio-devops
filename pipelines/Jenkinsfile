@@ -1,0 +1,62 @@
+pipeline {
+    agent any
+    environment {
+        SERVER_URL     = "${env.k8_CLUSTER}"
+        SERVER_SC      = "cluster_sc"
+        TEMPLATES_PATH = "k8/api"
+        AWS_AUTH       =  "ecr:us-east-1:AWS"
+        ECR_REPOSITORY = "${env.ECR_REPOSITORY}"
+        RELEASE        = "api"
+        NAME           = "desafio-devops-lab"
+    }
+    stages {
+        stage('Clone repository') { 
+            steps { 
+                script {
+                    checkout scm
+                }
+            }
+        }
+        stage('Build') { 
+            steps { 
+                script {
+                    def currentDirectory = pwd()
+                    echo "Diretório atual: ${currentDirectory}"
+                    echo "Workspace: ${WORKSPACE} "
+                    app = docker.build(NAME, "api")
+                }
+            }
+        }
+        stage('Test') {
+            steps {
+                script {
+                    // rodar na porta 5001 para se evitar conflito com portas usadas pelo jenkins
+                    sh "docker run -p 5001:5000 ${NAME} pytest test.py"
+                }
+            }
+        }
+        stage('Release') {
+            steps {
+                script {
+                    def HASH = env.GIT_COMMIT.take(8)
+                    docker.withRegistry(ECR_REPOSITORY, AWS_AUTH) {
+                        app = docker.build(NAME, "api")
+                        app.push("${HASH}")
+                    }
+                }
+            }
+        }
+        stage('Deploying Release to EKS cluster') {
+            steps {
+                script {
+                    def HASH = env.GIT_COMMIT.take(8)
+                    def image = "${ECR_REPOSITORY}/${NAME}:${HASH}"
+                    image = image.replace("https://", "")
+                    withKubeConfig([credentialsId: SERVER_SC, serverUrl: SERVER_URL]) {
+                        sh "helm install api ${TEMPLATES_PATH} --set image=${image} -n default"
+                    }
+                }
+            }
+        }
+    }
+}

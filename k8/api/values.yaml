@@ -1,0 +1,10 @@
+projectData:
+  name: 'desafio-devops'
+  deploymentName: 'deployment-desafio-devops'
+  namespace: 'default'
+  serviceName: 'service-desafio-devops'
+image: ''
+resources:
+  memoryLimit: '512Mi'
+  cpuRequest: '100m'
+  memoryRequest: '328Mi'

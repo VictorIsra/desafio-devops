@@ -1,0 +1,13 @@
+- name: Criar ServiceAccount Balancer
+  kubernetes.core.k8s:
+    kind: ServiceAccount
+    api_version: v1
+    definition:
+      metadata:
+        labels:
+          app.kubernetes.io/component: controller
+          app.kubernetes.io/name: "{{ balancer_service_account_name }}"
+        name: "{{ balancer_service_account_name }}"
+        namespace: "{{ balancer_service_account_namespace }}"
+        annotations:
+          eks.amazonaws.com/role-arn: arn:aws:iam::{{ account_id }}:role/AmazonEKSLoadBalancerControllerRole

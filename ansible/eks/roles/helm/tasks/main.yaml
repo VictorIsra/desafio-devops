@@ -1,0 +1,63 @@
+- name: Criar Ingress
+  kubernetes.core.k8s:
+    api_version: networking.k8s.io/v1
+    kind: Ingress
+    name: "{{ ingress_name }}"
+    namespace: default
+    definition:
+      metadata:
+        labels:
+          app: "{{ app_name }}"
+        annotations:
+          alb.ingress.kubernetes.io/scheme: internet-facing
+          alb.ingress.kubernetes.io/target-type: ip
+          alb.ingress.kubernetes.io/healthcheck-protocol: HTTP
+          alb.ingress.kubernetes.io/healthcheck-port: traffic-port
+          alb.ingress.kubernetes.io/healthcheck-interval-seconds: '15'
+          alb.ingress.kubernetes.io/healthcheck-timeout-seconds: '5'
+          alb.ingress.kubernetes.io/success-codes: '200'
+          alb.ingress.kubernetes.io/healthy-threshold-count: '2'
+          alb.ingress.kubernetes.io/unhealthy-threshold-count: '2'
+      spec:
+        ingressClassName: alb
+        rules:
+          - http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: "{{ service_name }}"
+                      port:
+                        number: 80
+       
+- name: Adiciona Chart
+  kubernetes.core.helm_repository:
+    name: eks
+    repo_url: https://aws.github.io/eks-charts
+
+- name: Instala plugin AWS controller
+  kubernetes.core.helm:
+    name: "{{ name }}"
+    kubeconfig: "{{ kubeconfig }}"
+    chart_ref: eks/aws-load-balancer-controller
+    update_repo_cache: true
+    release_namespace: "{{ release_namespace }}"
+    create_namespace: false
+    values:
+      clusterName: "{{ eks_cluster_name }}"
+      serviceAccount:
+        create: false
+        name: "{{ name }}"
+
+- name: Salvar informacoes ingress
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Ingress
+    name: "{{ ingress_name }}"
+    namespace: default
+  register: app_ingress
+
+- name: Printa hostname do Ingress
+  ansible.builtin.debug:
+    var: app_ingress.resources[0].status.loadBalancer.ingress[0].hostname
